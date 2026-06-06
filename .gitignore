@@ -18,7 +18,7 @@ dist/
 config.json
 seen.json
 translations.json
-.server.pid
+.server*.pid
 .server.ready
 *.tmp
 *.log

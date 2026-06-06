@@ -24,6 +24,10 @@ python home_scanner.py init --config config.json
 
 ## Web UI
 
+![Desktop web UI](./docs/screenshots/web-ui-desktop.png)
+
+![Mobile web UI](./docs/screenshots/web-ui-mobile.png)
+
 ```powershell
 python home_scanner.py --config config.json serve
 ```

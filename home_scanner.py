@@ -1865,7 +1865,7 @@ def save_translation_cache(cache: dict[str, str]) -> None:
 
 
 INDEX_HTML = r"""<!doctype html>
-<html lang="tr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -1997,7 +1997,7 @@ INDEX_HTML = r"""<!doctype html>
     button.active { border-color: var(--accent-2); color: #f5d394; background: rgba(224, 163, 58, 0.13); }
     .toolbar {
       display: grid;
-      grid-template-columns: 1fr auto auto;
+      grid-template-columns: 1fr auto auto auto;
       gap: 10px;
       align-items: center;
       border-bottom: 1px solid var(--line);
@@ -2184,8 +2184,12 @@ INDEX_HTML = r"""<!doctype html>
       .toolbar, .metrics { grid-template-columns: 1fr; }
     }
     @media (max-width: 540px) {
-      .grid, .row { grid-template-columns: 1fr; }
+      body { overflow-x: hidden; }
+      .shell, aside, main, .field, .grid > *, .row > *, button, input, select { min-width: 0; }
+      .stamp { display: none; }
+      .grid, .row, .category-choice { grid-template-columns: 1fr; }
       .checks { grid-template-columns: 1fr 1fr; }
+      .hint { overflow-wrap: anywhere; }
       aside, main { padding: 16px; }
       .map-shell { height: 300px; }
     }
@@ -2220,7 +2224,7 @@ INDEX_HTML = r"""<!doctype html>
           </div>
           <label class="switch"><input type="checkbox" id="apply_radius_filter"> Apply address radius filter</label>
           <input type="hidden" id="center_lat"><input type="hidden" id="center_lon">
-          <div class="hint" id="addressHint">The address is geocoded; the radius narrows results only when enabled.</div>
+          <div class="hint" id="addressHint">Geocode an address, then enable radius filtering.</div>
         </div>
 
         <div class="section">
