@@ -106,9 +106,9 @@ def test_total_known_cost_prefers_explicit_total_at_or_above_base_price():
         price_value=2000.0,
         rent_value=500.0,
         cost_items=[
-            {"kind": "Razem", "amount_value": 1900},
-            {"kind": "Razem", "amount_value": 2300},
-            {"kind": "Razem", "amount_value": 2500},
+            {"kind": "Total", "amount_value": 1900},
+            {"kind": "Total", "amount_value": 2300},
+            {"kind": "Total", "amount_value": 2500},
         ],
     )
 
@@ -119,7 +119,7 @@ def test_total_known_cost_falls_back_to_rent_when_no_valid_explicit_total():
     listing = make_listing(
         price_value=2000.0,
         rent_value=500.0,
-        cost_items=[{"kind": "Razem", "amount_value": 1900}],
+        cost_items=[{"kind": "Total", "amount_value": 1900}],
     )
 
     assert listing.total_known_cost == 2500.0

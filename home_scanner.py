@@ -73,12 +73,12 @@ CITY_BY_SLUG = {city["slug"]: city for city in CITY_OPTIONS}
 
 CATEGORY_OPTIONS = {
     "home": {
-        "label": "Ev",
+        "label": "Home",
         "category_path": "nieruchomosci/mieszkania/wynajem",
         "default_sort": "known_total:asc",
     },
     "car": {
-        "label": "Araba",
+        "label": "Car",
         "category_path": "motoryzacja/samochody",
         "default_sort": "filter_float_price:asc",
     },
@@ -123,7 +123,7 @@ class Listing:
         explicit_totals = [
             float(item["amount_value"])
             for item in self.cost_items
-            if item.get("kind") == "Razem" and item.get("amount_value") is not None
+            if item.get("kind") == "Total" and item.get("amount_value") is not None
         ]
         explicit_totals = [amount for amount in explicit_totals if amount >= base]
         if explicit_totals:
@@ -179,17 +179,17 @@ def configure_interactively(path: Path) -> None:
     if not config:
         config = {}
 
-    print("OLX filtre kurulumu")
-    print("Enter mevcut değeri korur. '-' değeri temizler.")
+    print("OLX filter setup")
+    print("Press Enter to keep the current value. Use '-' to clear it.")
     print("")
 
     current_url = str(config.get("search_url") or "")
-    search_url = prompt_text("OLX filtre URL'si", current_url)
+    search_url = prompt_text("OLX filter URL", current_url)
 
     if search_url:
         config["search_url"] = search_url
         config["local_filters"] = empty_local_filters()
-        print("URL kullanılıyor. Gizli çakışma olmaması için yerel filtreler temizlendi.")
+        print("URL mode is enabled. Local filters were cleared to avoid hidden conflicts.")
         configure_extra_local_filters(config)
     else:
         config["search_url"] = ""
@@ -197,9 +197,9 @@ def configure_interactively(path: Path) -> None:
         sync_local_filters_from_olx(config)
         configure_extra_local_filters(config)
 
-    config["max_pages"] = prompt_int("Kaç sayfa taransın", config.get("max_pages"), minimum=1) or 1
+    config["max_pages"] = prompt_int("How many pages should be scanned", config.get("max_pages"), minimum=1) or 1
     config["scan_interval_minutes"] = (
-        prompt_float("Kaç dakikada bir taransın", config.get("scan_interval_minutes"), minimum=1) or 10
+        prompt_float("Scan interval in minutes", config.get("scan_interval_minutes"), minimum=1) or 10
     )
 
     save_json_file(path, config)
@@ -212,41 +212,41 @@ def configure_interactively(path: Path) -> None:
 def configure_olx_filters(config: dict[str, Any]) -> None:
     filters = config.setdefault("olx_filters", {})
     filters["category_path"] = "nieruchomosci/mieszkania/wynajem"
-    filters["city_slug"] = prompt_text("Şehir slug'u (örn. warszawa, krakow, wroclaw)", filters.get("city_slug") or "warszawa")
-    filters["query"] = prompt_text("Arama kelimesi", filters.get("query") or "")
+    filters["city_slug"] = prompt_text("City slug (for example: warszawa, krakow, wroclaw)", filters.get("city_slug") or "warszawa")
+    filters["query"] = prompt_text("Search query", filters.get("query") or "")
     filters["sort"] = prompt_choice(
-        "Sıralama",
+        "Sort order",
         filters.get("sort") or "created_at:desc",
         {"1": "created_at:desc", "2": "filter_float_price:asc", "3": "filter_float_price:desc"},
-        "1=Yeni ilanlar, 2=Ucuzdan pahalıya, 3=Pahalıdan ucuza",
+        "1=Newest listings, 2=Cheapest first, 3=Most expensive first",
     )
     filters["owner_type"] = prompt_choice(
-        "İlan sahibi",
+        "Seller type",
         filters.get("owner_type") or "private",
         {"1": "private", "2": "business", "3": None},
-        "1=Özel, 2=Firma, 3=Hepsi",
+        "1=Private, 2=Business, 3=All",
     )
-    filters["price_from"] = prompt_int("Minimum fiyat PLN", filters.get("price_from"), minimum=0)
-    filters["price_to"] = prompt_int("Maksimum fiyat PLN", filters.get("price_to"), minimum=0)
+    filters["price_from"] = prompt_int("Minimum price PLN", filters.get("price_from"), minimum=0)
+    filters["price_to"] = prompt_int("Maximum price PLN", filters.get("price_to"), minimum=0)
     filters["area_from"] = prompt_float("Minimum m2", filters.get("area_from"), minimum=0)
-    filters["area_to"] = prompt_float("Maksimum m2", filters.get("area_to"), minimum=0)
-    filters["rooms"] = prompt_rooms("Oda sayısı (örn. 1,2 veya 2,3)", filters.get("rooms"))
-    filters["district_id"] = prompt_int("OLX district_id (bilmiyorsan boş bırak)", filters.get("district_id"), minimum=0)
-    filters["distance_km"] = prompt_int("Mesafe km (bilmiyorsan boş bırak)", filters.get("distance_km"), minimum=0)
-    filters["only_with_photo"] = prompt_bool("Sadece fotoğraflı ilanlar", filters.get("only_with_photo", True))
+    filters["area_to"] = prompt_float("Maximum m2", filters.get("area_to"), minimum=0)
+    filters["rooms"] = prompt_rooms("Room count (for example: 1,2 or 2,3)", filters.get("rooms"))
+    filters["district_id"] = prompt_int("OLX district_id (leave blank if unknown)", filters.get("district_id"), minimum=0)
+    filters["distance_km"] = prompt_int("Distance in km (leave blank if unknown)", filters.get("distance_km"), minimum=0)
+    filters["only_with_photo"] = prompt_bool("Only listings with photos", filters.get("only_with_photo", True))
 
 
 def configure_extra_local_filters(config: dict[str, Any]) -> None:
     filters = config.setdefault("local_filters", empty_local_filters())
     print("")
-    print("Ek yerel filtreler")
-    print("Bunlar OLX'ten gelen sonuçlar üzerinde ayrıca uygulanır.")
-    filters["districts_any"] = prompt_csv("Semt adı filtresi (örn. Mokotów,Wola)", filters.get("districts_any"))
-    filters["keywords_any"] = prompt_csv("Bu kelimelerden biri geçsin", filters.get("keywords_any"))
-    filters["keywords_all"] = prompt_csv("Bu kelimelerin hepsi geçsin", filters.get("keywords_all"))
-    filters["exclude_keywords"] = prompt_csv("Şu kelimeler geçmesin", filters.get("exclude_keywords"))
+    print("Extra local filters")
+    print("These are applied locally after OLX returns the results.")
+    filters["districts_any"] = prompt_csv("District name filter (for example: Mokotów,Wola)", filters.get("districts_any"))
+    filters["keywords_any"] = prompt_csv("Match at least one of these keywords", filters.get("keywords_any"))
+    filters["keywords_all"] = prompt_csv("Match all of these keywords", filters.get("keywords_all"))
+    filters["exclude_keywords"] = prompt_csv("Exclude listings containing these keywords", filters.get("exclude_keywords"))
     filters["max_total_known_cost"] = prompt_int(
-        "Bilinen toplam üst sınır PLN (kira + czynsz)",
+        "Known total cost limit PLN (rent + administrative fees)",
         filters.get("max_total_known_cost"),
         minimum=0,
     )
@@ -307,11 +307,11 @@ def prompt_int(label: str, current: Any = None, minimum: int | None = None) -> i
         try:
             parsed = int(float(value.replace(",", ".")))
         except ValueError:
-            print("Sayı girmen gerekiyor.")
+            print("Enter a number.")
             current = value
             continue
         if minimum is not None and parsed < minimum:
-            print(f"En düşük değer {minimum}.")
+            print(f"Minimum value is {minimum}.")
             current = value
             continue
         return parsed
@@ -325,25 +325,25 @@ def prompt_float(label: str, current: Any = None, minimum: float | None = None) 
         try:
             parsed = float(value.replace(",", "."))
         except ValueError:
-            print("Sayı girmen gerekiyor.")
+            print("Enter a number.")
             current = value
             continue
         if minimum is not None and parsed < minimum:
-            print(f"En düşük değer {minimum:g}.")
+            print(f"Minimum value is {minimum:g}.")
             current = value
             continue
         return parsed
 
 
 def prompt_bool(label: str, current: Any = False) -> bool:
-    current_text = "e" if current else "h"
+    current_text = "y" if current else "n"
     while True:
-        answer = prompt_text(f"{label} (e/h)", current_text).casefold()
-        if answer in {"e", "evet", "y", "yes", "true", "1"}:
+        answer = prompt_text(f"{label} (y/n)", current_text).casefold()
+        if answer in {"y", "yes", "true", "1"}:
             return True
-        if answer in {"h", "hayır", "hayir", "n", "no", "false", "0"}:
+        if answer in {"n", "no", "false", "0"}:
             return False
-        print("Lütfen 'e' veya 'h' gir.")
+        print("Enter 'y' or 'n'.")
 
 
 def prompt_choice(label: str, current: Any, choices: dict[str, Any], help_text: str) -> Any:
@@ -353,7 +353,7 @@ def prompt_choice(label: str, current: Any, choices: dict[str, Any], help_text: 
         answer = prompt_text(f"{label} ({help_text})", current_key)
         if answer in choices:
             return choices[answer]
-        print(f"Geçerli seçenekler: {', '.join(choices)}")
+        print(f"Valid options: {', '.join(choices)}")
 
 
 def prompt_rooms(label: str, current: Any) -> list[str]:
@@ -371,7 +371,7 @@ def prompt_rooms(label: str, current: Any) -> list[str]:
             else:
                 invalid.append(item.strip())
         if invalid:
-            print(f"Geçersiz oda değeri: {', '.join(invalid)}. 1, 2, 3 veya 4 kullan.")
+            print(f"Invalid room value: {', '.join(invalid)}. Use 1, 2, 3, or 4.")
             current_rooms = answer
             continue
         return rooms
@@ -470,9 +470,9 @@ def normalize_room(value: Any) -> str | None:
 
 def normalize_furniture(value: Any) -> str | None:
     key = str(value).strip().casefold()
-    if key in {"yes", "tak", "furnished", "esyali", "eşyalı", "1"}:
+    if key in {"yes", "tak", "furnished", "1"}:
         return "yes"
-    if key in {"no", "nie", "unfurnished", "esyasiz", "eşyasız", "0"}:
+    if key in {"no", "nie", "unfurnished", "0"}:
         return "no"
     return None
 
@@ -686,7 +686,7 @@ def extract_cost_items(description: str, params: dict[str, dict[str, Any]]) -> l
         item = {
             "kind": kind,
             "amounts": amounts,
-            "amount_value": amount_values[0] if amount_values and kind != "Kaucja" else None,
+            "amount_value": amount_values[0] if amount_values and kind != "Deposit" else None,
             "recurrence": infer_recurrence(normalized, kind),
             "text": shorten(segment, 220),
         }
@@ -721,24 +721,24 @@ def extract_amount_labels(text: str) -> list[str]:
 
 def infer_cost_kind(normalized_text: str) -> str:
     if any(key in normalized_text for key in ("całość", "calosc", "łącznie", "lacznie", "razem", "total")):
-        return "Razem"
+        return "Total"
     if "kaucj" in normalized_text:
-        return "Kaucja"
+        return "Deposit"
     if "czynsz" in normalized_text or "administr" in normalized_text:
-        return "Czynsz"
+        return "Administrative fee"
     if any(key in normalized_text for key in ("media", "prąd", "prad", "gaz", "woda", "ogrzew", "internet", "śmieci", "smieci", "rachunk", "faktur", "bills", "utilities")):
-        return "Media / rachunki"
+        return "Utilities / bills"
     if any(key in normalized_text for key in ("w cenie", "wliczon", "included", "inclusive")):
-        return "W cenie"
-    return "Ek ücret"
+        return "Included"
+    return "Extra fee"
 
 
 def infer_recurrence(normalized_text: str, kind: str) -> str:
-    if kind == "Kaucja":
+    if kind == "Deposit":
         return "one_time"
     if any(key in normalized_text for key in ("mies", "mc", "msc", "monthly", "per month", "co miesiąc")):
         return "monthly"
-    if kind in {"Czynsz", "Media / rachunki", "Ek ücret"}:
+    if kind in {"Administrative fee", "Utilities / bills", "Extra fee"}:
         return "monthly"
     return "unknown"
 
@@ -1313,7 +1313,7 @@ def watch(config: dict[str, Any], state_path: Path) -> None:
     start_input_thread(commands)
 
     print(f"Watching OLX every {interval_seconds / 60:g} minute(s).")
-    print("Type 'tara' and press Enter for an immediate scan, or 'q' to quit.")
+    print("Type 'scan' and press Enter for an immediate scan, or 'q' to quit.")
 
     next_scan = 0.0
     while True:
@@ -1328,7 +1328,7 @@ def watch(config: dict[str, Any], state_path: Path) -> None:
         if command in {"q", "quit", "exit"}:
             print("Exiting.")
             return
-        if command == "tara":
+        if command == "scan":
             should_scan = True
 
         if should_scan:
@@ -2131,94 +2131,94 @@ INDEX_HTML = r"""<!doctype html>
       </div>
       <form id="filters">
         <div class="section">
-          <div class="section-title">Tarama tipi</div>
+          <div class="section-title">Scan type</div>
           <div class="category-choice">
-            <label><input type="radio" name="category" value="home"> Ev</label>
-            <label><input type="radio" name="category" value="car"> Araba</label>
+            <label><input type="radio" name="category" value="home"> Home</label>
+            <label><input type="radio" name="category" value="car"> Car</label>
           </div>
         </div>
 
         <div class="section">
-          <div class="section-title">Konum</div>
+          <div class="section-title">Location</div>
           <div class="grid">
-            <div class="field"><label for="city_slug">Şehir</label><select id="city_slug"></select></div>
-            <div class="field"><label for="district_id">İlçe / semt</label><select id="district_id"><option value="">Tüm ilçeler</option></select></div>
+            <div class="field"><label for="city_slug">City</label><select id="city_slug"></select></div>
+            <div class="field"><label for="district_id">District / area</label><select id="district_id"><option value="">All districts</option></select></div>
           </div>
-          <div class="field"><label for="address">Adres çevresi</label><input id="address" placeholder="Rynek Główny 1"></div>
+          <div class="field"><label for="address">Around address</label><input id="address" placeholder="Rynek Główny 1"></div>
           <div class="grid">
-            <div class="field"><label for="radius_km">Yarıçap km</label><input id="radius_km" inputmode="decimal" placeholder="5"></div>
-            <div class="field"><label>&nbsp;</label><button class="warning" type="button" id="geocode">Adresi bul</button></div>
+            <div class="field"><label for="radius_km">Radius km</label><input id="radius_km" inputmode="decimal" placeholder="5"></div>
+            <div class="field"><label>&nbsp;</label><button class="warning" type="button" id="geocode">Find address</button></div>
           </div>
-          <label class="switch"><input type="checkbox" id="apply_radius_filter"> Adres yarıçap filtresini uygula</label>
+          <label class="switch"><input type="checkbox" id="apply_radius_filter"> Apply address radius filter</label>
           <input type="hidden" id="center_lat"><input type="hidden" id="center_lon">
-          <div class="hint" id="addressHint">Adres bulunur; yarıçap filtresi sadece seçenek işaretliyse listeyi daraltır.</div>
+          <div class="hint" id="addressHint">The address is geocoded; the radius narrows results only when enabled.</div>
         </div>
 
         <div class="section">
-          <div class="section-title">OLX filtreleri</div>
+          <div class="section-title">OLX filters</div>
           <div class="grid">
-            <div class="field"><label for="owner_type">İlan sahibi</label><select id="owner_type"><option value="all">Hepsi</option><option value="private">Özel</option><option value="business">Firma</option></select></div>
-            <div class="field"><label for="sort">Sıralama</label><select id="sort"><option value="known_total:asc">Bilinen toplam: ucuzdan pahalıya</option><option value="filter_float_price:asc">OLX fiyatı: ucuzdan pahalıya</option><option value="filter_float_price:desc">OLX fiyatı: pahalıdan ucuza</option><option value="created_at:desc">Yeni ilanlar</option></select></div>
+            <div class="field"><label for="owner_type">Seller type</label><select id="owner_type"><option value="all">All</option><option value="private">Private</option><option value="business">Business</option></select></div>
+            <div class="field"><label for="sort">Sort</label><select id="sort"><option value="known_total:asc">Known total: cheapest first</option><option value="filter_float_price:asc">OLX price: cheapest first</option><option value="filter_float_price:desc">OLX price: most expensive first</option><option value="created_at:desc">Newest listings</option></select></div>
           </div>
-          <div class="field"><label for="query">Arama kelimesi</label><input id="query" placeholder="metro, balkon, garaz"></div>
+          <div class="field"><label for="query">Search query</label><input id="query" placeholder="metro, balcony, garage"></div>
           <div class="grid home-only">
-            <div class="field"><label for="price_from">Min fiyat</label><input id="price_from" inputmode="numeric"></div>
-            <div class="field"><label for="price_to">Max fiyat</label><input id="price_to" inputmode="numeric"></div>
+            <div class="field"><label for="price_from">Min price</label><input id="price_from" inputmode="numeric"></div>
+            <div class="field"><label for="price_to">Max price</label><input id="price_to" inputmode="numeric"></div>
             <div class="field"><label for="area_from">Min m2</label><input id="area_from" inputmode="decimal"></div>
             <div class="field"><label for="area_to">Max m2</label><input id="area_to" inputmode="decimal"></div>
           </div>
           <div class="grid car-only">
-            <div class="field"><label for="car_price_from">Min fiyat</label><input id="car_price_from" inputmode="numeric"></div>
-            <div class="field"><label for="car_price_to">Max fiyat</label><input id="car_price_to" inputmode="numeric"></div>
-            <div class="field"><label for="year_from">Min yıl</label><input id="year_from" inputmode="numeric"></div>
-            <div class="field"><label for="year_to">Max yıl</label><input id="year_to" inputmode="numeric"></div>
+            <div class="field"><label for="car_price_from">Min price</label><input id="car_price_from" inputmode="numeric"></div>
+            <div class="field"><label for="car_price_to">Max price</label><input id="car_price_to" inputmode="numeric"></div>
+            <div class="field"><label for="year_from">Min year</label><input id="year_from" inputmode="numeric"></div>
+            <div class="field"><label for="year_to">Max year</label><input id="year_to" inputmode="numeric"></div>
             <div class="field"><label for="mileage_from">Min km</label><input id="mileage_from" inputmode="numeric"></div>
             <div class="field"><label for="mileage_to">Max km</label><input id="mileage_to" inputmode="numeric"></div>
           </div>
-          <div class="field home-only"><label>Oda sayısı</label><div class="checks"><label><input type="checkbox" name="rooms" value="one"> 1</label><label><input type="checkbox" name="rooms" value="two"> 2</label><label><input type="checkbox" name="rooms" value="three"> 3</label><label><input type="checkbox" name="rooms" value="four"> 4+</label></div></div>
-          <div class="field home-only"><label>Eşya durumu</label><div class="checks two"><label><input type="checkbox" name="furniture" value="yes"> Eşyalı</label><label><input type="checkbox" name="furniture" value="no"> Eşyasız</label></div></div>
-          <label class="switch"><input type="checkbox" id="only_with_photo"> Sadece fotoğraflı ilanlar</label>
+          <div class="field home-only"><label>Room count</label><div class="checks"><label><input type="checkbox" name="rooms" value="one"> 1</label><label><input type="checkbox" name="rooms" value="two"> 2</label><label><input type="checkbox" name="rooms" value="three"> 3</label><label><input type="checkbox" name="rooms" value="four"> 4+</label></div></div>
+          <div class="field home-only"><label>Furnishing</label><div class="checks two"><label><input type="checkbox" name="furniture" value="yes"> Furnished</label><label><input type="checkbox" name="furniture" value="no"> Unfurnished</label></div></div>
+          <label class="switch"><input type="checkbox" id="only_with_photo"> Only listings with photos</label>
         </div>
 
         <div class="section">
-          <div class="section-title">Ek filtreler</div>
-          <div class="field"><label for="keywords_any">Bu kelimelerden biri geçsin</label><input id="keywords_any" placeholder="metro,balkon,tramwaj"></div>
-          <div class="field"><label for="keywords_all">Bu kelimelerin hepsi geçsin</label><input id="keywords_all" placeholder="bezpośrednio"></div>
-          <div class="field"><label for="exclude_keywords">Şu kelimeler geçmesin</label><input id="exclude_keywords" placeholder="pokój dla dziewczyny"></div>
-          <div class="field home-only"><label for="max_total_known_cost">Bilinen toplam üst sınır</label><input id="max_total_known_cost" inputmode="numeric" placeholder="2500"></div>
-          <label class="switch home-only"><input type="checkbox" id="apply_total_limit"> Bilinen toplam üst sınırı uygula</label>
+          <div class="section-title">Extra filters</div>
+          <div class="field"><label for="keywords_any">Match any keyword</label><input id="keywords_any" placeholder="metro,balcony,tram"></div>
+          <div class="field"><label for="keywords_all">Match all keywords</label><input id="keywords_all" placeholder="direct owner"></div>
+          <div class="field"><label for="exclude_keywords">Exclude keywords</label><input id="exclude_keywords" placeholder="room share"></div>
+          <div class="field home-only"><label for="max_total_known_cost">Known total limit</label><input id="max_total_known_cost" inputmode="numeric" placeholder="2500"></div>
+          <label class="switch home-only"><input type="checkbox" id="apply_total_limit"> Apply known total limit</label>
         </div>
 
         <div class="section">
-          <div class="section-title">Tarama</div>
+          <div class="section-title">Scan</div>
           <div class="grid">
-            <div class="field"><label for="max_pages">Sayfa sayısı</label><input id="max_pages" inputmode="numeric" value="2"></div>
-            <div class="field"><label for="scan_interval_minutes">Aralık dakika</label><input id="scan_interval_minutes" inputmode="decimal" value="10"></div>
+            <div class="field"><label for="max_pages">Page count</label><input id="max_pages" inputmode="numeric" value="2"></div>
+            <div class="field"><label for="scan_interval_minutes">Interval minutes</label><input id="scan_interval_minutes" inputmode="decimal" value="10"></div>
           </div>
-          <label class="switch"><input type="checkbox" id="hide_seen"> Eski ilanları gizle</label>
+          <label class="switch"><input type="checkbox" id="hide_seen"> Hide seen listings</label>
         </div>
 
         <div class="actions">
-          <button class="accent" type="button" id="scan">Tara</button>
-          <div class="row"><button type="button" id="watch">İzlemeyi başlat</button><button type="button" id="save">Filtreleri kaydet</button></div>
-          <button class="warning" type="button" id="resetSeen">Bu filtrenin hafızasını sıfırla</button>
+          <button class="accent" type="button" id="scan">Scan</button>
+          <div class="row"><button type="button" id="watch">Start watching</button><button type="button" id="save">Save filters</button></div>
+          <button class="warning" type="button" id="resetSeen">Reset memory for this filter</button>
         </div>
       </form>
     </aside>
     <main>
-      <div class="toolbar"><div class="status" id="status">Filtreleri seçip Tara düğmesine bas.</div><button type="button" id="showAll">Tümünü göster</button><button type="button" id="showNew">Sadece yeniler</button><button type="button" id="showFavorites">Favoriler</button></div>
-      <div class="metrics"><div class="metric"><b id="metricTotal">0</b><span>eşleşme</span></div><div class="metric"><b id="metricShown">0</b><span>gösterilen</span></div><div class="metric"><b id="metricNew">0</b><span>yeni</span></div><div class="metric"><b id="metricMode">Tümü</b><span>mod</span></div></div>
+      <div class="toolbar"><div class="status" id="status">Choose filters and press Scan.</div><button type="button" id="showAll">Show all</button><button type="button" id="showNew">New only</button><button type="button" id="showFavorites">Favorites</button></div>
+      <div class="metrics"><div class="metric"><b id="metricTotal">0</b><span>matches</span></div><div class="metric"><b id="metricShown">0</b><span>shown</span></div><div class="metric"><b id="metricNew">0</b><span>new</span></div><div class="metric"><b id="metricMode">All</b><span>mode</span></div></div>
       <div class="map-shell"><div id="map"></div></div>
-      <div class="results" id="results"><div class="empty">Henüz tarama yapılmadı.</div></div>
+      <div class="results" id="results"><div class="empty">No scan has been run yet.</div></div>
     </main>
   </div>
   <div class="photo-viewer" id="photoViewer" aria-hidden="true">
-    <div class="photo-viewer-panel" role="dialog" aria-modal="true" aria-label="Büyütülmüş fotoğraf">
-      <button type="button" class="photo-viewer-close" id="closePhotoViewer" aria-label="Kapat">×</button>
+    <div class="photo-viewer-panel" role="dialog" aria-modal="true" aria-label="Enlarged photo">
+      <button type="button" class="photo-viewer-close" id="closePhotoViewer" aria-label="Close">×</button>
       <div class="photo-viewer-stage">
-        <button type="button" class="photo-nav prev" id="photoPrev" aria-label="Ã–nceki fotoÄŸraf">‹</button>
+        <button type="button" class="photo-nav prev" id="photoPrev" aria-label="Previous photo">‹</button>
         <img id="photoViewerImage" alt="">
-        <button type="button" class="photo-nav next" id="photoNext" aria-label="Sonraki fotoÄŸraf">›</button>
+        <button type="button" class="photo-nav next" id="photoNext" aria-label="Next photo">›</button>
       </div>
       <div class="photo-counter" id="photoCounter"></div>
     </div>
@@ -2228,15 +2228,15 @@ INDEX_HTML = r"""<!doctype html>
     const $ = (id) => document.getElementById(id);
     const SORT_OPTIONS = {
       home: [
-        ["known_total:asc", "Bilinen toplam: ucuzdan pahalıya"],
-        ["filter_float_price:asc", "OLX fiyatı: ucuzdan pahalıya"],
-        ["filter_float_price:desc", "OLX fiyatı: pahalıdan ucuza"],
-        ["created_at:desc", "Yeni ilanlar"]
+        ["known_total:asc", "Known total: cheapest first"],
+        ["filter_float_price:asc", "OLX price: cheapest first"],
+        ["filter_float_price:desc", "OLX price: most expensive first"],
+        ["created_at:desc", "Newest listings"]
       ],
       car: [
-        ["filter_float_price:asc", "OLX fiyatı: ucuzdan pahalıya"],
-        ["filter_float_price:desc", "OLX fiyatı: pahalıdan ucuza"],
-        ["created_at:desc", "Yeni ilanlar"]
+        ["filter_float_price:asc", "OLX price: cheapest first"],
+        ["filter_float_price:desc", "OLX price: most expensive first"],
+        ["created_at:desc", "Newest listings"]
       ]
     };
     const FAVORITES_KEY = "home_scanner_favorites_v1";
@@ -2275,7 +2275,7 @@ INDEX_HTML = r"""<!doctype html>
     function updateFavoriteControl() {
       const button = $("showFavorites");
       if (!button) return;
-      button.textContent = `Favoriler (${favorites.size})`;
+      button.textContent = `Favorites (${favorites.size})`;
       button.classList.toggle("active", favoriteMode);
     }
     function setCategory(category, sortValue = null) {
@@ -2375,32 +2375,32 @@ INDEX_HTML = r"""<!doctype html>
     function populateCities(items) { cities = items || []; $("city_slug").innerHTML = cities.map((city) => `<option value="${escapeAttr(city.slug)}">${escapeHtml(city.name)}</option>`).join(""); }
     async function loadDistricts(selectedId = "") {
       const city = $("city_slug").value || "krakow";
-      $("district_id").innerHTML = `<option value="">Yükleniyor...</option>`;
+      $("district_id").innerHTML = `<option value="">Loading...</option>`;
       try {
         const data = await api(`/api/districts?city_slug=${encodeURIComponent(city)}&category=${encodeURIComponent(selectedCategory())}`);
-        $("district_id").innerHTML = [`<option value="">Tüm ilçeler</option>`].concat((data.districts || []).map((district) => `<option value="${escapeAttr(district.id)}">${escapeHtml(district.label)} (${district.count})</option>`)).join("");
+        $("district_id").innerHTML = [`<option value="">All districts</option>`].concat((data.districts || []).map((district) => `<option value="${escapeAttr(district.id)}">${escapeHtml(district.label)} (${district.count})</option>`)).join("");
         $("district_id").value = selectedId || "";
-      } catch { $("district_id").innerHTML = `<option value="">İlçe yüklenemedi</option>`; }
+      } catch { $("district_id").innerHTML = `<option value="">Districts could not be loaded</option>`; }
     }
     async function geocodeAddress() {
       const address = valueOrNull("address");
       if (!address) {
-        $("addressHint").textContent = "Adres yazmadan çevre filtresi uygulanmaz.";
+        $("addressHint").textContent = "Enter an address before applying the radius filter.";
         $("center_lat").value = ""; $("center_lon").value = ""; updateMap([], null); return;
       }
-      setBusy(true); $("addressHint").textContent = "Adres aranıyor...";
+      setBusy(true); $("addressHint").textContent = "Searching address...";
       try {
         const data = await api(`/api/geocode?city_slug=${encodeURIComponent($("city_slug").value || "krakow")}&address=${encodeURIComponent(address)}`);
-        if (!data.result) { $("addressHint").textContent = "Adres bulunamadı."; return; }
+        if (!data.result) { $("addressHint").textContent = "Address not found."; return; }
         $("center_lat").value = data.result.lat; $("center_lon").value = data.result.lon;
-        $("addressHint").textContent = `Merkez: ${data.result.label || `${data.result.lat}, ${data.result.lon}`}`;
+        $("addressHint").textContent = `Center: ${data.result.label || `${data.result.lat}, ${data.result.lon}`}`;
         updateMap([], {lat: data.result.lat, lon: data.result.lon, radius_km: Number(valueOrNull("radius_km") || 0)});
       } catch (error) { $("addressHint").innerHTML = `<span class="error">${escapeHtml(error.message)}</span>`; }
       finally { setBusy(false); }
     }
     async function scan(extra = {}) {
       favoriteMode = false;
-      setBusy(true); $("status").textContent = "OLX taranıyor...";
+      setBusy(true); $("status").textContent = "Scanning OLX...";
       try { const data = await api("/api/scan", collectPayload(extra)); render(data); return data; }
       catch (error) { $("status").innerHTML = `<span class="error">${escapeHtml(error.message)}</span>`; }
       finally { setBusy(false); }
@@ -2425,13 +2425,13 @@ INDEX_HTML = r"""<!doctype html>
       $("metricTotal").textContent = data.total_matches ?? 0;
       $("metricShown").textContent = numberedListings.length;
       $("metricNew").textContent = data.new_count ?? 0;
-      $("metricMode").textContent = favoriteMode ? "Favori" : (data.hide_seen ? "Yeni" : "Tümü");
-      if (favoriteMode) $("status").textContent = `${numberedListings.length} favori gösteriliyor.`;
-      else $("status").textContent = data.first_scan && data.hide_seen ? "İlk yeni-ilan taraması: mevcut ilanlar hafızaya alındı, eski ilan gösterilmedi." : `${data.displayed_count} ilan gösteriliyor. Toplam eşleşme: ${data.total_matches}.`;
+      $("metricMode").textContent = favoriteMode ? "Favorite" : (data.hide_seen ? "New" : "All");
+      if (favoriteMode) $("status").textContent = `${numberedListings.length} favorites shown.`;
+      else $("status").textContent = data.first_scan && data.hide_seen ? "First new-listing scan: current listings were saved as seen, so old listings are hidden." : `${data.displayed_count} listings shown. Total matches: ${data.total_matches}.`;
       updateFavoriteControl();
       updateMap(numberedListings, data.center);
       const results = $("results");
-      if (numberedListings.length === 0) { results.innerHTML = `<div class="empty">${favoriteMode ? "Favori ilan yok." : (data.hide_seen ? "Yeni ilan yok." : "Bu filtrelerle ilan bulunamadı.")}</div>`; return; }
+      if (numberedListings.length === 0) { results.innerHTML = `<div class="empty">${favoriteMode ? "No favorite listings." : (data.hide_seen ? "No new listings." : "No listings matched these filters.")}</div>`; return; }
       results.innerHTML = numberedListings.map(renderListing).join("");
       document.querySelectorAll(".photo-thumb").forEach((button) => button.addEventListener("click", (event) => {
         event.stopPropagation();
@@ -2472,7 +2472,7 @@ INDEX_HTML = r"""<!doctype html>
       if (!image) return;
       const url = photoGallery[photoGalleryIndex] || "";
       image.src = url;
-      image.alt = `Fotoğraf ${photoGalleryIndex + 1}`;
+      image.alt = `Photo ${photoGalleryIndex + 1}`;
       if (counter) counter.textContent = photoGallery.length ? `${photoGalleryIndex + 1} / ${photoGallery.length}` : "";
       if (prev) prev.style.display = photoGallery.length > 1 ? "grid" : "none";
       if (next) next.style.display = photoGallery.length > 1 ? "grid" : "none";
@@ -2505,7 +2505,7 @@ INDEX_HTML = r"""<!doctype html>
       const descriptionBlock = description ? `<div class="description">${escapeHtml(description)}</div>` : "";
       const costs = (item.cost_items || []).map((cost) => `<div class="cost-item"><b>${escapeHtml(cost.kind || "Cost")}</b>: ${escapeHtml(cost.text_en || cost.text || "")}</div>`).join("");
       const costBlock = isHome && costs ? `<div class="cost-box"><div class="cost-title">Additional / included costs found in description</div>${costs}</div>` : "";
-      return `<article class="listing ${item.is_new ? "new" : ""} ${isFavorite ? "favorite" : ""}" data-id="${escapeAttr(item.id)}"><div class="title-line"><span class="num-badge">${displayIndex}</span><h2>${escapeHtml(item.title_en || item.title)}</h2><button type="button" class="favorite-toggle ${isFavorite ? "active" : ""}" data-id="${escapeAttr(item.id)}" title="Favori">${isFavorite ? "★" : "☆"}</button></div>${photoBlock}<div class="facts">${facts.map((fact) => `<span class="fact">${escapeHtml(String(fact))}</span>`).join("")}</div>${costBlock}${descriptionBlock}<div class="listing-actions"><button type="button" class="open-link" data-url="${escapeAttr(item.url)}">Open on OLX</button></div></article>`;
+      return `<article class="listing ${item.is_new ? "new" : ""} ${isFavorite ? "favorite" : ""}" data-id="${escapeAttr(item.id)}"><div class="title-line"><span class="num-badge">${displayIndex}</span><h2>${escapeHtml(item.title_en || item.title)}</h2><button type="button" class="favorite-toggle ${isFavorite ? "active" : ""}" data-id="${escapeAttr(item.id)}" title="Favorite">${isFavorite ? "★" : "☆"}</button></div>${photoBlock}<div class="facts">${facts.map((fact) => `<span class="fact">${escapeHtml(String(fact))}</span>`).join("")}</div>${costBlock}${descriptionBlock}<div class="listing-actions"><button type="button" class="open-link" data-url="${escapeAttr(item.url)}">Open on OLX</button></div></article>`;
     }
     function ensureMap() {
       if (map || !window.L) return;
@@ -2522,7 +2522,7 @@ INDEX_HTML = r"""<!doctype html>
       const coordCounts = new Map();
       if (center && center.lat && center.lon) {
         const centerLatLng = [center.lat, center.lon]; bounds.push(centerLatLng);
-        L.circleMarker(centerLatLng, {radius: 8, color: "#e0a33a", fillColor: "#e0a33a", fillOpacity: 0.95}).addTo(markerLayer).bindPopup("Arama merkezi");
+        L.circleMarker(centerLatLng, {radius: 8, color: "#e0a33a", fillColor: "#e0a33a", fillOpacity: 0.95}).addTo(markerLayer).bindPopup("Search center");
         if (center.radius_km) radiusLayer = L.circle(centerLatLng, {radius: center.radius_km * 1000, color: "#e0a33a", weight: 1, fillColor: "#e0a33a", fillOpacity: 0.08}).addTo(map);
       }
       listings.forEach((item) => {
@@ -2551,7 +2551,7 @@ INDEX_HTML = r"""<!doctype html>
             iconAnchor: [15, 15]
           })
         }).addTo(markerLayer);
-        const approxText = approximate ? "<br><small>Yaklaşık konum: şehir/arama merkezi kullanıldı</small>" : "";
+        const approxText = approximate ? "<br><small>Approximate location: city/search center was used</small>" : "";
         marker.bindPopup(`<b>#${displayIndex} ${escapeHtml(item.title_en || item.title)}</b><br>${escapeHtml(item.price_label || "")}${approxText}`);
         marker.on("click", () => focusListing(item.id)); activeMarkerById.set(String(item.id), marker);
       });
@@ -2567,21 +2567,21 @@ INDEX_HTML = r"""<!doctype html>
     function escapeHtml(value) { return String(value).replace(/[&<>"']/g, (char) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"}[char])); }
     function escapeAttr(value) { return escapeHtml(value); }
     async function saveConfig() {
-      setBusy(true); $("status").textContent = "Filtreler kaydediliyor...";
-      try { await api("/api/config", collectPayload()); $("status").textContent = "Filtreler config.json içine kaydedildi."; }
+      setBusy(true); $("status").textContent = "Saving filters...";
+      try { await api("/api/config", collectPayload()); $("status").textContent = "Filters were saved to config.json."; }
       catch (error) { $("status").innerHTML = `<span class="error">${escapeHtml(error.message)}</span>`; }
       finally { setBusy(false); }
     }
     async function resetSeen() {
-      setBusy(true); $("status").textContent = "Hafıza sıfırlanıyor...";
-      try { const data = await api("/api/seen/reset", collectPayload()); $("status").textContent = data.removed ? "Bu filtre için eski ilan hafızası sıfırlandı." : "Bu filtre için kayıtlı hafıza yoktu."; }
+      setBusy(true); $("status").textContent = "Resetting memory...";
+      try { const data = await api("/api/seen/reset", collectPayload()); $("status").textContent = data.removed ? "Seen-listing memory was reset for this filter." : "There was no saved memory for this filter."; }
       catch (error) { $("status").innerHTML = `<span class="error">${escapeHtml(error.message)}</span>`; }
       finally { setBusy(false); }
     }
     function toggleWatch() {
-      if (watchTimer) { clearInterval(watchTimer); watchTimer = null; $("watch").textContent = "İzlemeyi başlat"; $("status").textContent = "İzleme durduruldu."; return; }
+      if (watchTimer) { clearInterval(watchTimer); watchTimer = null; $("watch").textContent = "Start watching"; $("status").textContent = "Watching stopped."; return; }
       $("hide_seen").checked = true; const minutes = Math.max(Number($("scan_interval_minutes").value || 10), 1);
-      scan(); watchTimer = setInterval(() => scan(), minutes * 60 * 1000); $("watch").textContent = "İzlemeyi durdur"; $("status").textContent = `${minutes} dakikada bir yeni ilan taranacak.`;
+      scan(); watchTimer = setInterval(() => scan(), minutes * 60 * 1000); $("watch").textContent = "Stop watching"; $("status").textContent = `New-listing scans will run every ${minutes} minute(s).`;
     }
     $("scan").addEventListener("click", () => scan());
     $("save").addEventListener("click", saveConfig);
@@ -2601,7 +2601,7 @@ INDEX_HTML = r"""<!doctype html>
       if (event.key === "ArrowRight") movePhoto(1);
     });
     document.querySelectorAll("input[name='category']").forEach((radio) => radio.addEventListener("change", async () => { setCategory(radio.value); $("center_lat").value = ""; $("center_lon").value = ""; $("district_id").value = ""; await loadDistricts(); updateMap([], null); }));
-    $("city_slug").addEventListener("change", async () => { $("center_lat").value = ""; $("center_lon").value = ""; $("addressHint").textContent = "Şehir değişti; adres çevresi kullanacaksan adresi tekrar bul."; await loadDistricts(); updateMap([], null); });
+    $("city_slug").addEventListener("change", async () => { $("center_lat").value = ""; $("center_lon").value = ""; $("addressHint").textContent = "City changed; find the address again if you want to use an address radius."; await loadDistricts(); updateMap([], null); });
     setCategory("home");
     updateFavoriteControl();
     api("/api/config").then(async (data) => { populateCities(data.cities); applyConfig(data.config); await loadDistricts(data.config.district_id); ensureMap(); updateMap([], null); updateFavoriteControl(); }).catch((error) => { $("status").innerHTML = `<span class="error">${escapeHtml(error.message)}</span>`; });
@@ -2641,7 +2641,7 @@ def parse_args() -> argparse.Namespace:
         help="Fetch and print results without writing seen-state.",
     )
 
-    watch_parser = subparsers.add_parser("watch", help="Run periodic scans. Type 'tara' for an immediate scan.")
+    watch_parser = subparsers.add_parser("watch", help="Run periodic scans. Type 'scan' for an immediate scan.")
     add_common_args(watch_parser)
 
     serve_parser = subparsers.add_parser("serve", help="Run the localhost web interface.")

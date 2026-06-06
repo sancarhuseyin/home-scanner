@@ -1,17 +1,17 @@
 # home-scanner
 
-OLX.pl ilanlarını seçtiğin filtrelere göre tarayan yerel bir Python aracıdır. Web arayüzü, harita görünümü, yeni ilan hafızası ve bildirim desteği içerir. Şu an iki kategori desteklenir: kiralık ev ve araba.
+A local Python tool for scanning OLX.pl listings with saved filters. It includes a web UI, map view, seen-listing memory, favorites, and notifications. Two categories are currently supported: home rentals and cars.
 
-## Özellikler
+## Features
 
-- Web arayüzüyle şehir, ilçe/semt, fiyat, metrekare, oda, eşya, yıl, kilometre ve anahtar kelime filtreleri.
-- Adres çevresi filtresi ve Leaflet/OpenStreetMap harita görünümü.
-- Yeni ilan takibi için `seen.json` tabanlı yerel hafıza.
-- Favori ilanlar için tarayıcı localStorage kaydı.
-- Terminal, ses, Telegram, ntfy ve özel komut bildirimleri.
-- CLI ile tek seferlik tarama, periyodik izleme ve URL üretme.
+- Web UI for city, district, price, area, rooms, furnishing, year, mileage, and keyword filters.
+- Address-radius filtering with a Leaflet/OpenStreetMap map view.
+- Local `seen.json` memory for tracking new listings.
+- Browser localStorage favorites.
+- Console, sound, Telegram, ntfy, and custom command notifications.
+- CLI commands for one-off scans, periodic watching, and generated OLX URLs.
 
-## Kurulum
+## Installation
 
 ```powershell
 python -m venv .venv
@@ -20,59 +20,59 @@ python -m pip install -r requirements.txt
 python home_scanner.py init --config config.json
 ```
 
-`config.json` kişisel ayar dosyasıdır ve Git'e eklenmez. Başlangıç değerleri için [config.example.json](./config.example.json) kullanılır.
+`config.json` is your personal settings file and is ignored by Git. Defaults come from [config.example.json](./config.example.json).
 
-## Web Arayüzü
+## Web UI
 
 ```powershell
 python home_scanner.py --config config.json serve
 ```
 
-Tarayıcıda aç:
+Open this address in your browser:
 
 ```text
 http://localhost:8000
 ```
 
-Arayüzde URL girmen gerekmez. Şehir ve ilçe/semt listeden seçilir. Fiyat, oda, metrekare, eşyalı/eşyasız, anahtar kelime ve hariç kelime filtreleri formdan verilebilir.
+You do not need to paste an OLX URL in the web UI. Choose the city and district from lists, then set price, rooms, area, furnishing, keywords, and excluded keywords from the form.
 
-Adres çevresi filtresi için adresi yaz, yarıçapı km olarak gir ve `Adresi bul` düğmesine bas. Harita arama merkezini, yarıçapı ve ilanların yaklaşık OLX konumlarını gösterir.
+For address-radius filtering, enter an address, set a radius in kilometers, and click `Find address`. The map shows the search center, radius, and approximate OLX listing locations.
 
-`Eski ilanları gizle` açıkken tarama yalnızca daha önce görülmeyen ilanları listeler. Kapalıyken tüm eşleşmeleri gösterir; yine de hafızayı günceller.
+When `Hide seen listings` is enabled, a scan only displays listings that were not seen before. When it is disabled, all matches are shown while the seen memory is still updated.
 
-## CLI Kullanımı
+## CLI Usage
 
-Tek seferlik tarama:
+Run one scan:
 
 ```powershell
 python home_scanner.py --config config.json scan
 ```
 
-İlk çalıştırmada mevcut ilanlar `seen.json` içine kaydedilir ve varsayılan olarak bildirim gönderilmez. Mevcut tüm sonuçları bildirim olarak göndermek için:
+On the first run, current listings are stored in `seen.json` and notifications are not sent by default. To notify for all current results:
 
 ```powershell
 python home_scanner.py --config config.json scan --notify-current
 ```
 
-Periyodik izleme:
+Run periodic scans:
 
 ```powershell
 python home_scanner.py --config config.json watch
 ```
 
-Program çalışırken hemen tarama yapmak için terminale `tara`, çıkmak için `q` yaz.
+While the watcher is running, type `scan` for an immediate scan or `q` to quit.
 
-Config'ten üretilen OLX URL'sini görmek için:
+Print the OLX URL generated from the config:
 
 ```powershell
 python home_scanner.py --config config.json url
 ```
 
-Eski `python olx_rent_watcher.py ...` komutları geriye dönük uyumluluk için çalışmaya devam eder.
+Legacy `python olx_rent_watcher.py ...` commands still work for backward compatibility.
 
-## Bildirimler
+## Notifications
 
-Varsayılan bildirim terminal çıktısı ve kısa sestir. Telegram için `notifications.telegram.enabled` değerini `true` yap ve `bot_token` ile `chat_id` doldur. Değerleri config'e yazmak istemezsen ortam değişkenleri de kullanılabilir:
+The default notification output is the terminal plus a short sound. To enable Telegram, set `notifications.telegram.enabled` to `true` and provide `bot_token` and `chat_id`. You can also keep secrets out of config and use environment variables:
 
 ```powershell
 $env:TELEGRAM_BOT_TOKEN="123:abc"
@@ -80,34 +80,34 @@ $env:TELEGRAM_CHAT_ID="123456"
 python home_scanner.py --config config.json watch
 ```
 
-ntfy için `notifications.ntfy.enabled` değerini `true` yap ve benzersiz bir `topic` belirle.
+For ntfy, set `notifications.ntfy.enabled` to `true` and provide a unique `topic`.
 
-## Geliştirme
+## Development
 
-Geliştirme bağımlılıkları:
+Install development dependencies:
 
 ```powershell
 python -m pip install -r requirements-dev.txt
 ```
 
-Testler:
+Run checks:
 
 ```powershell
 python -m pytest
 python -m py_compile home_scanner.py olx_rent_watcher.py
 ```
 
-## GitHub'a Yüklemeden Önce
+## Before Publishing
 
-- `config.json`, `seen.json`, `translations.json`, loglar, `.env` ve geçici sunucu dosyaları `.gitignore` içindedir.
-- Gizli Telegram token'larını config yerine ortam değişkenlerinde tutman önerilir. Örnek için [.env.example](./.env.example) var.
+- `config.json`, `seen.json`, `translations.json`, logs, `.env`, and temporary server files are ignored by Git.
+- Keep Telegram tokens in environment variables instead of committed config files. See [.env.example](./.env.example).
 
-## Lisans
+## License
 
-Bu proje [MIT License](./LICENSE) ile lisanslanmıştır.
+This project is licensed under the [MIT License](./LICENSE).
 
-## Notlar
+## Notes
 
-- Araç OLX'in herkese açık arama sayfasından API parametrelerini çıkarır ve `api/v1/offers` endpoint'ini kullanır.
-- Aralıkları makul tut: varsayılan 10 dakika, minimum pratik olarak 1 dakika.
-- Login, CAPTCHA aşma veya yüksek hızlı istek davranışı yoktur.
+- The tool extracts API parameters from public OLX search pages and uses the `api/v1/offers` endpoint.
+- Keep intervals reasonable: the default is 10 minutes, and 1 minute is the practical minimum.
+- The tool does not log in, bypass CAPTCHAs, or perform high-rate request behavior.
